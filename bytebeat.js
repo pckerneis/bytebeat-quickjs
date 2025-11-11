@@ -63,7 +63,7 @@ for (;;) {
   // Fill entire buffer at once for better performance
   for (let i = 0; i < BUFFER_SIZE; i++) {
     try {
-      buffer[i] = genFunc(t);
+      buffer[i] = genFunc(t) & 255;
     } catch (e) {
       buffer[i] = 128;
       lastError = e;
