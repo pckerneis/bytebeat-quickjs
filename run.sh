@@ -7,8 +7,8 @@ if [ -z "$FILE" ]; then
   exit 1
 fi
 
-# Start QuickJS + aplay pipeline
-qjs bytebeat.js "$FILE" "$RATE" | aplay -f U8 -r "$RATE" &
+# Start QuickJS + aplay pipeline with higher priority
+nice -n -10 qjs bytebeat.js "$FILE" "$RATE" | aplay -f U8 -r "$RATE" &
 
 PID=$!
 
