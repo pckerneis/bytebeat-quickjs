@@ -2,7 +2,7 @@ import * as std from "std";
 import * as os from "os";
 
 const formulaPath = scriptArgs[1] || scriptArgs[0];
-const BUFFER_SIZE = 65536;
+const BUFFER_SIZE = 512;
 const buffer = new Uint8Array(BUFFER_SIZE);
 
 let t = 0;
@@ -51,12 +51,22 @@ if (err === 0) {
 const { sin, cos, tan, log, exp, pow, sqrt, abs, floor, ceil, round, random } = Math;
 
 for (; ;) {
-    // Fill buffer - no try-catch in hot loop for performance
+    // Fill buffer
     for (let i = 0; i < BUFFER_SIZE; i++) {
-        buffer[i] = genFunc(t++, sin, cos, tan, log, exp, pow, sqrt, abs, floor, ceil, round, random) & 255;
+        try {
+            buffer[i] = genFunc(t++, sin, cos, tan, log, exp, pow, sqrt, abs, floor, ceil, round, random) & 255;
+        } catch (e) {
+            buffer[i] = 128;
+            lastError = e;
+        }
     }
 
     std.out.write(buffer.buffer, 0, BUFFER_SIZE);
+
+    if (lastError) {
+        std.err.printf("[error] %s\n", lastError.message || lastError);
+        lastError = null;
+    }
 
     const [st, err] = os.stat(formulaPath);
     if (err === 0 && st.mtime !== lastMtime) {
