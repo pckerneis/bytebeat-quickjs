@@ -15,8 +15,8 @@ PID=$!
 # Cleanup function
 cleanup() {
   echo "Stopping..."
-  kill $PID 2>/dev/null
-  wait $PID 2>/dev/null
+  kill -9 $PID 2>/dev/null
+  killall -9 qjs aplay 2>/dev/null
   exit 0
 }
 

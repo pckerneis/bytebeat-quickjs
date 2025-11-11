@@ -1,7 +1,10 @@
 import * as std from "std";
 import * as os from "os";
 
-const formulaPath = scriptArgs[0];
+// Debug: print all scriptArgs
+std.err.printf("scriptArgs: %s\n", JSON.stringify(scriptArgs));
+
+const formulaPath = scriptArgs[1] || scriptArgs[0];
 const controlPath = "/tmp/bytebeat.reload";
 
 let t = 0;
@@ -20,12 +23,18 @@ function loadFormula() {
       return trimmed && !trimmed.startsWith('//');
     });
     
-    expr = codeLines.join('\n');
+    const newExpr = codeLines.join('\n');
     
+    if (!newExpr) {
+      std.err.printf("[error] no code found in formula file\n");
+      return;
+    }
+    
+    expr = newExpr;
     std.err.printf("[reloaded %s] expr='%s' (length=%d)\n", 
                    new Date().toLocaleTimeString(), expr, expr.length);
   } catch (e) {
-    std.err.printf("[error loading formula] %s\n", e.message);
+    std.err.printf("[error loading formula] %s: %s\n", e.message, e.stack || "");
   }
 }
 
@@ -65,7 +74,7 @@ for (;;) {
   
   // Log errors periodically (every 8000 samples = 1 second at 8kHz)
   if (lastError && t % 8000 === 0) {
-    std.err.printf("[error] %s\n", lastError.message || lastError);
+    std.err.printf("[error] %s | expr='%s'\n", lastError.message || lastError, expr);
     lastError = null;
   }
 
