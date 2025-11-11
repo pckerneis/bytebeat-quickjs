@@ -12,6 +12,17 @@ qjs bytebeat.js "$FILE" "$RATE" | aplay -f U8 -r "$RATE" &
 
 PID=$!
 
+# Cleanup function
+cleanup() {
+  echo "Stopping..."
+  kill $PID 2>/dev/null
+  wait $PID 2>/dev/null
+  exit 0
+}
+
+# Trap Ctrl+C and cleanup
+trap cleanup INT TERM
+
 echo "Running (PID=$PID). Ctrl+C to stop."
 echo "Watching $FILE for changes..."
 
@@ -20,4 +31,4 @@ while inotifywait -qq -e close_write "$FILE"; do
   touch /tmp/bytebeat.reload
 done
 
-kill $PID
+cleanup
