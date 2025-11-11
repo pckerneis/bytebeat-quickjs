@@ -37,9 +37,6 @@ globalThis.random   = Math.random;
 // Precreate control file so watcher can signal
 std.open(controlPath, "w").close();
 
-const stdin = std.in;
-stdin.setBlocking(false);
-
 // Audio loop
 for (;;) {
   try {
