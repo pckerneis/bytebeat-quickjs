@@ -22,7 +22,8 @@ function loadFormula() {
     
     expr = codeLines.join('\n');
     
-    std.err.printf("[reloaded %s]\n", new Date().toLocaleTimeString());
+    std.err.printf("[reloaded %s] expr='%s' (length=%d)\n", 
+                   new Date().toLocaleTimeString(), expr, expr.length);
   } catch (e) {
     std.err.printf("[error loading formula] %s\n", e.message);
   }
