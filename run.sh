@@ -23,9 +23,9 @@ cleanup() {
 # Trap Ctrl+C and cleanup
 trap cleanup INT TERM
 
-echo -e "\033[1;36m================================\033[0m"
-echo -e "\033[1;35m♪♫  BYTEBEAT QUICKJS  ♫♪\033[0m"
-echo -e "\033[1;36m================================\033[0m"
+echo -e "\033[1;36m==========================\033[0m"
+echo -e "\033[1m     BYTEBEAT QUICKJS\033[0m"
+echo -e "\033[1;36m==========================\033[0m"
 echo "Running (PID=$PID). Ctrl+C to stop."
 echo "Watching $FILE for changes..."
 
