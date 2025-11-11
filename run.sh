@@ -26,4 +26,5 @@ trap cleanup INT TERM
 echo "Running (PID=$PID). Ctrl+C to stop."
 echo "Watching $FILE for changes..."
 
-cleanup
+# Wait for the background process
+wait $PID
