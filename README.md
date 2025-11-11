@@ -72,3 +72,21 @@ Enable fast math with the `--fast` flag to use pre-computed lookup tables for ma
 ```bash
 ./run.sh examples/steady-on-tim.js 44000 --fast
 ```
+
+## Offline Mode
+
+Pre-render a fixed duration and play it back. Useful for complex formulas that cause underruns in realtime mode.
+
+```bash
+./play.sh <formula.js> [rate] [duration] [--fast]
+```
+
+Example:
+
+```bash
+# Render and play 30 seconds at 44kHz with fast math
+./play.sh examples/steady-on-tim.js 44000 30 --fast
+
+# Render and play 60 seconds at 8kHz
+./play.sh examples/42-melody.js 8000 60
+```
