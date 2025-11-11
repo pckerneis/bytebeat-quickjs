@@ -12,14 +12,13 @@ Features:
 
 - QuickJS
 - ALSA
-- inotify-tools
 
 ## Installation
 
 ### Dependencies
 
 ```bash
-sudo apt install quickjs inotify-tools alsa-utils
+sudo apt install quickjs alsa-utils
 ```
 
 On some distributions, you may need to build QuickJS from source.
@@ -52,8 +51,6 @@ CFLAGS += -std=c99
 ```bash
 git clone https://github.com/pckerneis/bytebeat-quickjs.git
 cd bytebeat-quickjs
-
-chmod +x run.sh
 ```
 
 ## Usage

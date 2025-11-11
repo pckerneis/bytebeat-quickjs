@@ -26,9 +26,4 @@ trap cleanup INT TERM
 echo "Running (PID=$PID). Ctrl+C to stop."
 echo "Watching $FILE for changes..."
 
-# Watch formula file for edits
-while inotifywait -qq -e close_write "$FILE"; do
-  touch /tmp/bytebeat.reload
-done
-
 cleanup
