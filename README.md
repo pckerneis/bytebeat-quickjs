@@ -32,18 +32,12 @@ sudo apt-get install build-essential git
 git clone https://github.com/bellard/quickjs.git
 cd quickjs
 
-# 3. Build the qjs executable
-make
+# 3. Build the qjs executable with optimization
+CFLAGS="-O2 -flto -DNDEBUG -std=c11" make qjs
 
-# 4. (Optional) install system-wide
+# 4. Install system-wide
 sudo cp qjs /usr/local/bin/
 sudo cp qjsc /usr/local/bin/
-```
-
-In case you hit a "error: 'for' loop initial declarations are only allowed in C99 or C11 mode" error, you can try to add the following line to the Makefile, line xx:
-
-```makefile
-CFLAGS += -std=c99
 ```
 
 ### Clone this repository
@@ -69,4 +63,12 @@ The `examples` directory contains some sample bytebeat formulas.
 
 ```bash
 ./run.sh examples/steady-on-tim.js 44000
+```
+
+## Fast Math
+
+Enable fast math with the `--fast` flag to use pre-computed lookup tables for math functions (sin, cos, tan) and a xorshift32 PRNG. This should yield a performance boost, but the results may be slightly different.
+
+```bash
+./run.sh examples/steady-on-tim.js 44000 --fast
 ```

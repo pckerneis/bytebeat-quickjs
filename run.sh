@@ -3,12 +3,19 @@ FILE=$1
 RATE=${2:-8000}
 
 if [ -z "$FILE" ]; then
-  echo "Usage: $0 <formula.js> [rate]"
+  echo "Usage: $0 <formula.js> [rate] [--fast]"
+  echo "  --fast: Use pre-computed lookup tables for math functions"
   exit 1
 fi
 
+# Extract --fast flag if present
+FAST_FLAG=""
+if [ "$3" = "--fast" ]; then
+  FAST_FLAG="--fast"
+fi
+
 # Start QuickJS + aplay pipeline with higher priority
-nice -n -10 qjs bytebeat.js "$FILE" "$RATE" | aplay -f U8 -r "$RATE" &
+nice -n -10 qjs bytebeat.js "$FILE" "$RATE" $FAST_FLAG | aplay -f U8 -r "$RATE" &
 
 PID=$!
 
