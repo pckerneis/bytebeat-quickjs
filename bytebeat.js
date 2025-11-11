@@ -54,9 +54,14 @@ for (;;) {
   t++;
 
   // non-blocking reload signal check
-  if (t % 1024 === 0 && os.access(controlPath, os.R_OK)) {
-    // remove the signal file after reading
-    os.remove(controlPath);
-    loadFormula();
+  if (t % 1024 === 0) {
+    try {
+      os.stat(controlPath);
+      // remove the signal file after reading
+      os.remove(controlPath);
+      loadFormula();
+    } catch (e) {
+      // File doesn't exist, nothing to do
+    }
   }
 }
