@@ -105,14 +105,14 @@ if (useFastMath) {
 const { log, exp, pow, sqrt, abs, floor, ceil, round } = Math;
 
 for (; ;) {
-    // Fill buffer
-    for (let i = 0; i < BUFFER_SIZE; i++) {
-        try {
+    try {
+        // Fill buffer
+        for (let i = 0; i < BUFFER_SIZE; i++) {
             buffer[i] = genFunc(t++, sin, cos, tan, log, exp, pow, sqrt, abs, floor, ceil, round, random) & 255;
-        } catch (e) {
-            buffer[i] = 128;
-            lastError = e;
         }
+    } catch (e) {
+        buffer[i] = 128;
+        lastError = e;
     }
 
     std.out.write(buffer.buffer, 0, BUFFER_SIZE);
