@@ -38,8 +38,8 @@ globalThis.random   = Math.random;
 std.open(controlPath, "w").close();
 
 function putchar(byte) {
-    // write a single byte to stdout
-    const buf = new Uint8Array([byte & 0xFF]);
+    const buf = new Uint8Array(1);
+    buf[0] = byte & 0xFF;
     std.out.write(buf);
 }
 
