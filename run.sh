@@ -15,8 +15,8 @@ PID=$!
 # Cleanup function
 cleanup() {
   echo "Stopping..."
-  kill -9 $PID 2>/dev/null
-  killall -9 qjs aplay 2>/dev/null
+  # Kill the entire process group (qjs and aplay)
+  kill -9 -$PID 2>/dev/null
   exit 0
 }
 
