@@ -44,6 +44,7 @@ function loadFormula() {
 
 loadFormula();
 
+const { sin, cos, tan, log, exp, pow, sqrt, abs, floor, ceil, round, random } = Math;
 
 for (; ;) {
     try {
