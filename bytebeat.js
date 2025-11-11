@@ -3,26 +3,29 @@ import * as os from "os";
 
 const formulaPath = scriptArgs[1] || scriptArgs[0];
 const useFastMath = scriptArgs.includes("--fast");
-const BUFFER_SIZE = 512;
+const useCache = !scriptArgs.includes("--no-cache");
+const BUFFER_SIZE = 4096;
 const buffer = new Uint8Array(BUFFER_SIZE);
-
-const STAT_CHECK_INTERVAL = 256;
-let statCounter = 0;
 
 let t = 0;
 let genFunc = null;
 let lastError = null;
 let lastMtime = 0;
 
-const TABLE_SIZE = 2048;
+const TABLE_SIZE = 1024;
 const TABLE_MASK = TABLE_SIZE - 1;
 const TABLE_SCALE = TABLE_SIZE / (Math.PI * 2);
 let sinTable, cosTable, tanTable;
 
+const pow2Cache = new Float64Array(256);
+for (let i = 0; i < 256; i++) {
+    pow2Cache[i] = Math.pow(2, (i - 128) / 12); // Common musical intervals
+}
+
 if (useFastMath) {
-    sinTable = new Float64Array(TABLE_SIZE);
-    cosTable = new Float64Array(TABLE_SIZE);
-    tanTable = new Float64Array(TABLE_SIZE);
+    sinTable = new Float32Array(TABLE_SIZE);
+    cosTable = new Float32Array(TABLE_SIZE);
+    tanTable = new Float32Array(TABLE_SIZE);
     
     for (let i = 0; i < TABLE_SIZE; i++) {
         const angle = (i / TABLE_SIZE) * Math.PI * 2;
@@ -51,7 +54,6 @@ function loadFormula() {
                 start = i + 1;
             }
         }
-
         const lastLine = content.slice(start).trim();
         if (lastLine && !lastLine.startsWith('//')) {
             if (expr) expr += '\n';
@@ -64,8 +66,8 @@ function loadFormula() {
         }
 
         genFunc = new Function(
-            't, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round',
-            `return (${expr})`);
+            't, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2',
+            `"use strict"; return (${expr})`);
 
         std.err.printf("[reloaded %s] expr='%s' (length=%d)\n",
             new Date().toLocaleTimeString(), expr, expr.length);
@@ -84,28 +86,24 @@ let sin, cos, tan, random;
 
 if (useFastMath) {
     sin = (x) => {
-        const normalized = x - Math.floor(x / (Math.PI * 2)) * (Math.PI * 2);
-        const index = (normalized * TABLE_SCALE) & TABLE_MASK;
-        return sinTable[index];
+        const idx = ((x * TABLE_SCALE) | 0) & TABLE_MASK;
+        return sinTable[idx];
     };
     cos = (x) => {
-        const normalized = x - Math.floor(x / (Math.PI * 2)) * (Math.PI * 2);
-        const index = (normalized * TABLE_SCALE) & TABLE_MASK;
-        return cosTable[index];
+        const idx = ((x * TABLE_SCALE) | 0) & TABLE_MASK;
+        return cosTable[idx];
     };
     tan = (x) => {
-        const normalized = x - Math.floor(x / (Math.PI * 2)) * (Math.PI * 2);
-        const index = (normalized * TABLE_SCALE) & TABLE_MASK;
-        return tanTable[index];
+        const idx = ((x * TABLE_SCALE) | 0) & TABLE_MASK;
+        return tanTable[idx];
     };
     
-    // xorshift32 PRNG
     let seed = 2463534242;
     random = () => {
         seed ^= seed << 13;
         seed ^= seed >> 17;
         seed ^= seed << 5;
-        return ((seed >>> 0) / 0xFFFFFFFF);
+        return ((seed >>> 0) * 2.3283064365386963e-10); // Faster than division
     };
 } else {
     sin = Math.sin;
@@ -114,27 +112,81 @@ if (useFastMath) {
     random = Math.random;
 }
 
-const { log, exp, pow, sqrt, abs, floor, ceil, round } = Math;
+const { log, exp, sqrt, ceil, round } = Math;
+
+const abs = (x) => x < 0 ? -x : x;
+const floor = (x) => x | 0;
+
+const pow = useCache ? (base, exp) => {
+    if (base === 2 && exp >= -10.67 && exp <= 10.67) {
+        const idx = ((exp * 12) + 128) | 0;
+        if (idx >= 0 && idx < 256) return pow2Cache[idx];
+    }
+    return Math.pow(base, exp);
+} : Math.pow;
+
+const pow2 = (exp) => {
+    if (exp >= -10.67 && exp <= 10.67) {
+        const idx = ((exp * 12) + 128) | 0;
+        if (idx >= 0 && idx < 256) return pow2Cache[idx];
+    }
+    return Math.pow(2, exp);
+};
+
+const STAT_CHECK_INTERVAL = 512;
+let statCounter = 0;
+
+let errorMode = false;
 
 for (; ;) {
-    let i = 0;
-    try {
-        for (; i < BUFFER_SIZE - 3; i += 4) {
-            buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
-            buffer[i+1] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
-            buffer[i+2] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
-            buffer[i+3] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
+    if (!errorMode) {
+        let i = 0;
+        
+        // Massive unroll: 16 samples at once
+        try {
+            for (; i < BUFFER_SIZE - 15; i += 16) {
+                buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+1] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+2] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+3] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+4] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+5] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+6] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+7] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+8] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+9] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+10] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+11] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+12] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+13] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+14] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                buffer[i+15] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+            }
+            // Remaining samples
+            for (; i < BUFFER_SIZE; i++) {
+                buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+            }
+        } catch (e) {
+            errorMode = true;
+            lastError = e;
+            // Fill remaining with silence
+            for (; i < BUFFER_SIZE; i++) {
+                buffer[i] = 128;
+            }
         }
-        for (; i < BUFFER_SIZE; i++) {
-            buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
+    } else {
+        // Error recovery mode: slower but safer
+        for (let i = 0; i < BUFFER_SIZE; i++) {
+            try {
+                buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+            } catch (e) {
+                buffer[i] = 128;
+            }
         }
-    } catch (e) {
-        for (; i < BUFFER_SIZE; i++) {
-            buffer[i] = 128;
-        }
-        lastError = e;
+        errorMode = false;
     }
 
+    // Single write call
     std.out.write(buffer.buffer, 0, BUFFER_SIZE);
 
     if (lastError) {
