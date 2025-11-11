@@ -14,8 +14,8 @@ if [ "$3" = "--fast" ]; then
   FAST_FLAG="--fast"
 fi
 
-# Start QuickJS + aplay pipeline with higher priority
-nice -n -10 qjs bytebeat.js "$FILE" "$RATE" $FAST_FLAG | aplay -f U8 -r "$RATE" &
+# Start QuickJS + aplay pipeline
+qjs bytebeat.js "$FILE" "$RATE" $FAST_FLAG | aplay -f U8 -r "$RATE" &
 
 PID=$!
 
