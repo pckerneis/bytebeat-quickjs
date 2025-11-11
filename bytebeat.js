@@ -72,7 +72,7 @@ for (;;) {
   }
   
   // Write full buffer
-  std.out.write(buffer.buffer);
+  std.out.write(buffer.buffer, 0, BUFFER_SIZE);
   
   // Log errors periodically (once per buffer)
   if (lastError) {
