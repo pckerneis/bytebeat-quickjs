@@ -59,7 +59,7 @@ function loadFormula() {
 
         genFunc = new Function(
             't', 'sin', 'cos', 'tan', 'random', 'sqrt', 'abs', 'floor', 'log', 'exp', 'pow', 'pow2',
-            `"use strict";return (${expr})`
+            `return (${expr})`
         );
 
         // Warm up JIT
