@@ -1,5 +1,5 @@
 import * as std from "std";
-import * as os from "os";
+import { initFastMath, loadFormulaFromFile, createMathFunctions, compileFormula } from "./common.js";
 
 const formulaPath = scriptArgs[1] || scriptArgs[0];
 const sampleRate = parseInt(scriptArgs[2]) || 8000;
@@ -7,99 +7,29 @@ const duration = parseFloat(scriptArgs[3]) || 30.0;
 const useFastMath = scriptArgs.includes("--fast");
 
 const totalSamples = Math.floor(sampleRate * duration);
-const CHUNK_SIZE = 65536;
 
 std.err.printf("=== OFFLINE MODE ===\n");
 std.err.printf("Duration: %.1f seconds (%d samples at %d Hz)\n", duration, totalSamples, sampleRate);
 
-// Fast math setup
-const TABLE_SIZE = 512;
-const TABLE_MASK = 511;
-const TABLE_SCALE = TABLE_SIZE / (Math.PI * 2);
-let sinTable, cosTable, tanTable;
+// Initialize math tables
+const tables = initFastMath(useFastMath);
 
-const POW2_CACHE_SIZE = 512;
-const pow2Cache = new Float32Array(POW2_CACHE_SIZE);
-for (let i = 0; i < POW2_CACHE_SIZE; i++) {
-    pow2Cache[i] = Math.pow(2, (i - 256) / 12);
-}
-
-if (useFastMath) {
-    sinTable = new Float32Array(TABLE_SIZE);
-    cosTable = new Float32Array(TABLE_SIZE);
-    tanTable = new Float32Array(TABLE_SIZE);
-    
-    for (let i = 0; i < TABLE_SIZE; i++) {
-        const angle = (i / TABLE_SIZE) * Math.PI * 2;
-        sinTable[i] = Math.sin(angle);
-        cosTable[i] = Math.cos(angle);
-        tanTable[i] = Math.tan(angle);
-    }
-    std.err.printf("[fast-math] enabled\n");
-}
-
-// Load formula
+// Load and compile formula
 let genFunc = null;
-
 try {
-    const f = std.open(formulaPath, "r");
-    let expr = "";
-    const content = f.readAsString();
-    f.close();
-
-    for (let i = 0, start = 0; i <= content.length; i++) {
-        if (i === content.length || content[i] === '\n') {
-            const line = content.slice(start, i).trim();
-            if (line && !line.startsWith('//')) {
-                if (expr) expr += '\n';
-                expr += line;
-            }
-            start = i + 1;
-        }
-    }
-
-    genFunc = new Function(
-        't', 'sin', 'cos', 'tan', 'random', 'sqrt', 'abs', 'floor', 'log', 'exp', 'pow', 'pow2',
-        `return (${expr})`
-    );
-
+    const expr = loadFormulaFromFile(formulaPath);
+    genFunc = compileFormula(expr);
     std.err.printf("[loaded] formula length=%d\n", expr.length);
 } catch (e) {
     std.err.printf("[error] %s\n", e.message);
     std.exit(1);
 }
 
-// Math functions
-let sin, cos, tan, random;
+// Create math functions
+const mathFuncs = createMathFunctions(useFastMath, tables);
+const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2 } = mathFuncs;
 
-if (useFastMath) {
-    sin = (x) => sinTable[((x * TABLE_SCALE) | 0) & TABLE_MASK];
-    cos = (x) => cosTable[((x * TABLE_SCALE) | 0) & TABLE_MASK];
-    tan = (x) => tanTable[((x * TABLE_SCALE) | 0) & TABLE_MASK];
-    let seed = 2463534242;
-    random = () => {
-        seed ^= seed << 13;
-        seed ^= seed >> 17;
-        seed ^= seed << 5;
-        return (seed >>> 0) * 2.3283064365386963e-10;
-    };
-} else {
-    sin = Math.sin;
-    cos = Math.cos;
-    tan = Math.tan;
-    random = Math.random;
-}
-
-const log = Math.log, exp = Math.exp, sqrt = Math.sqrt;
-const abs = (x) => x < 0 ? -x : x;
-const floor = (x) => x | 0;
-const pow2 = (x) => {
-    const idx = ((x * 12) + 256) | 0;
-    return (idx >= 0 && idx < POW2_CACHE_SIZE) ? pow2Cache[idx] : Math.pow(2, x);
-};
-const pow = (base, exp) => base === 2 ? pow2(exp) : Math.pow(base, exp);
-
-const args = [0, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, pow2];
+const args = [0, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2];
 
 // Allocate full buffer in memory
 std.err.printf("Allocating %d MB...\n", (totalSamples / 1024 / 1024).toFixed(2));

@@ -15,7 +15,7 @@ if [ "$3" = "--fast" ]; then
 fi
 
 # Start QuickJS + aplay pipeline
-qjs optimized.js "$FILE" "$RATE" $FAST_FLAG | aplay -f U8 -r "$RATE" &
+qjs bytebeat.js "$FILE" "$RATE" $FAST_FLAG | aplay -f U8 -r "$RATE" &
 
 PID=$!
 

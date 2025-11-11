@@ -1,9 +1,9 @@
 import * as std from "std";
 import * as os from "os";
+import { initFastMath, loadFormulaFromFile, createMathFunctions, compileFormula } from "./common.js";
 
 const formulaPath = scriptArgs[1] || scriptArgs[0];
 const useFastMath = scriptArgs.includes("--fast");
-const useCache = !scriptArgs.includes("--no-cache");
 const BUFFER_SIZE = 4096;
 const buffer = new Uint8Array(BUFFER_SIZE);
 
@@ -12,65 +12,22 @@ let genFunc = null;
 let lastError = null;
 let lastMtime = 0;
 
-const TABLE_SIZE = 1024;
-const TABLE_MASK = TABLE_SIZE - 1;
-const TABLE_SCALE = TABLE_SIZE / (Math.PI * 2);
-let sinTable, cosTable, tanTable;
-
-const pow2Cache = new Float64Array(256);
-for (let i = 0; i < 256; i++) {
-    pow2Cache[i] = Math.pow(2, (i - 128) / 12); // Common musical intervals
-}
-
-if (useFastMath) {
-    sinTable = new Float32Array(TABLE_SIZE);
-    cosTable = new Float32Array(TABLE_SIZE);
-    tanTable = new Float32Array(TABLE_SIZE);
-    
-    for (let i = 0; i < TABLE_SIZE; i++) {
-        const angle = (i / TABLE_SIZE) * Math.PI * 2;
-        sinTable[i] = Math.sin(angle);
-        cosTable[i] = Math.cos(angle);
-        tanTable[i] = Math.tan(angle);
-    }
-    std.err.printf("[fast-math] Lookup tables initialized (%d entries)\n", TABLE_SIZE);
-}
+// Initialize math tables
+const tables = initFastMath(useFastMath);
 
 function loadFormula() {
     try {
-        const f = std.open(formulaPath, "r");
-        const content = f.readAsString().trim();
-        f.close();
-
-        let expr = "";
-        let start = 0;
-        for (let i = 0; i < content.length; i++) {
-            if (content[i] === '\n') {
-                const line = content.slice(start, i).trim();
-                if (line && !line.startsWith('//')) {
-                    if (expr) expr += '\n';
-                    expr += line;
-                }
-                start = i + 1;
-            }
-        }
-        const lastLine = content.slice(start).trim();
-        if (lastLine && !lastLine.startsWith('//')) {
-            if (expr) expr += '\n';
-            expr += lastLine;
-        }
-
+        const expr = loadFormulaFromFile(formulaPath);
+        
         if (!expr) {
             std.err.printf("[error] no code found in formula file\n");
             return;
         }
 
-        genFunc = new Function(
-            't, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2',
-            `return (${expr})`);
+        genFunc = compileFormula(expr);
 
-        std.err.printf("[reloaded %s] expr='%s' (length=%d)\n",
-            new Date().toLocaleTimeString(), expr, expr.length);
+        std.err.printf("[reloaded %s] len=%d\n",
+            new Date().toLocaleTimeString(), expr.length);
     } catch (e) {
         std.err.printf("[error loading formula] %s\n", e.message);
     }
@@ -82,56 +39,9 @@ if (err === 0) {
     loadFormula();
 }
 
-let sin, cos, tan, random;
-
-if (useFastMath) {
-    sin = (x) => {
-        const idx = ((x * TABLE_SCALE) | 0) & TABLE_MASK;
-        return sinTable[idx];
-    };
-    cos = (x) => {
-        const idx = ((x * TABLE_SCALE) | 0) & TABLE_MASK;
-        return cosTable[idx];
-    };
-    tan = (x) => {
-        const idx = ((x * TABLE_SCALE) | 0) & TABLE_MASK;
-        return tanTable[idx];
-    };
-    
-    let seed = 2463534242;
-    random = () => {
-        seed ^= seed << 13;
-        seed ^= seed >> 17;
-        seed ^= seed << 5;
-        return ((seed >>> 0) * 2.3283064365386963e-10); // Faster than division
-    };
-} else {
-    sin = Math.sin;
-    cos = Math.cos;
-    tan = Math.tan;
-    random = Math.random;
-}
-
-const { log, exp, sqrt, ceil, round } = Math;
-
-const abs = (x) => x < 0 ? -x : x;
-const floor = (x) => x | 0;
-
-const pow = useCache ? (base, exp) => {
-    if (base === 2 && exp >= -10.67 && exp <= 10.67) {
-        const idx = ((exp * 12) + 128) | 0;
-        if (idx >= 0 && idx < 256) return pow2Cache[idx];
-    }
-    return Math.pow(base, exp);
-} : Math.pow;
-
-const pow2 = (exp) => {
-    if (exp >= -10.67 && exp <= 10.67) {
-        const idx = ((exp * 12) + 128) | 0;
-        if (idx >= 0 && idx < 256) return pow2Cache[idx];
-    }
-    return Math.pow(2, exp);
-};
+// Create math functions
+const mathFuncs = createMathFunctions(useFastMath, tables);
+const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2 } = mathFuncs;
 
 const STAT_CHECK_INTERVAL = 512;
 let statCounter = 0;
