@@ -29,7 +29,9 @@ function loadFormula() {
     }
     
     // Compile expression into function for performance
-    genFunc = new Function('t', `return (${expr})`);
+    genFunc = new Function(
+        't, sin, cos, tan, log, exp, pow, sqrt, abs, floor, ceil, round, random',
+        `return (${expr})`);
     
     std.err.printf("[reloaded %s] expr='%s' (length=%d)\n", 
                    new Date().toLocaleTimeString(), expr, expr.length);
@@ -40,20 +42,6 @@ function loadFormula() {
 
 loadFormula();
 
-// Expose Math functions short names
-globalThis.sin      = Math.sin;
-globalThis.cos      = Math.cos;
-globalThis.tan      = Math.tan;
-globalThis.log      = Math.log;
-globalThis.exp      = Math.exp;
-globalThis.pow      = Math.pow;
-globalThis.sqrt     = Math.sqrt;
-globalThis.abs      = Math.abs;
-globalThis.floor    = Math.floor;
-globalThis.ceil     = Math.ceil;
-globalThis.round    = Math.round;
-globalThis.random   = Math.random;
-
 // Audio loop with buffering
 const BUFFER_SIZE = 16384;
 const buffer = new Uint8Array(BUFFER_SIZE);
@@ -63,7 +51,11 @@ for (;;) {
   // Fill entire buffer at once for better performance
   for (let i = 0; i < BUFFER_SIZE; i++) {
     try {
-      buffer[i] = genFunc(t) & 255;
+      buffer[i] = genFunc(
+          t,
+          Math.sin, Math.cos, Math.tan, Math.log, Math.exp, Math.pow,
+          Math.sqrt, Math.abs, Math.floor, Math.ceil, Math.round, Math.random
+      ) & 255;
     } catch (e) {
       buffer[i] = 128;
       lastError = e;
