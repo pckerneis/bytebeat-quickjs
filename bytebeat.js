@@ -40,7 +40,7 @@ std.open(controlPath, "w").close();
 function putchar(byte) {
     const buf = new Uint8Array(1);
     buf[0] = byte & 0xFF;
-    std.out.write(buf);
+    std.out.write(buf.buffer);
 }
 
 // Audio loop
