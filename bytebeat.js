@@ -34,9 +34,6 @@ globalThis.ceil     = Math.ceil;
 globalThis.round    = Math.round;
 globalThis.random   = Math.random;
 
-// Precreate control file so watcher can signal
-std.open(controlPath, "w").close();
-
 function putchar(byte) {
     const buf = new Uint8Array(1);
     buf[0] = byte & 0xFF;
@@ -55,13 +52,16 @@ for (;;) {
 
   // non-blocking reload signal check
   if (t % 1024 === 0) {
+    let fileExists = false;
     try {
       os.stat(controlPath);
-      // remove the signal file after reading
+      fileExists = true;
+    } catch (e) {
+      // File doesn't exist
+    }
+    if (fileExists) {
       os.remove(controlPath);
       loadFormula();
-    } catch (e) {
-      // File doesn't exist, nothing to do
     }
   }
 }
