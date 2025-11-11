@@ -23,6 +23,7 @@ cleanup() {
 # Trap Ctrl+C and cleanup
 trap cleanup INT TERM
 
+echo "♪♫ BYTEBEAT QUICKJS ♫♪"
 echo "Running (PID=$PID). Ctrl+C to stop."
 echo "Watching $FILE for changes..."
 
