@@ -8,7 +8,7 @@ const formulaPath = scriptArgs[1] || scriptArgs[0];
 const controlPath = "/tmp/bytebeat.reload";
 
 let t = 0;
-let expr = "(t*(t>>5|t>>8))&255";
+let genFunc = null;
 
 function loadFormula() {
   try {
@@ -23,14 +23,16 @@ function loadFormula() {
       return trimmed && !trimmed.startsWith('//');
     });
     
-    const newExpr = codeLines.join('\n');
+    const expr = codeLines.join('\n');
     
-    if (!newExpr) {
+    if (!expr) {
       std.err.printf("[error] no code found in formula file\n");
       return;
     }
     
-    expr = newExpr;
+    // Compile expression into function for performance
+    genFunc = new Function('t', `return (${expr})`);
+    
     std.err.printf("[reloaded %s] expr='%s' (length=%d)\n", 
                    new Date().toLocaleTimeString(), expr, expr.length);
   } catch (e) {
@@ -70,7 +72,7 @@ function flushBuffer() {
 
 for (;;) {
   try {
-    const val = eval(expr) & 255;
+    const val = genFunc(t) & 255;
     buffer[bufferIndex++] = val;
     
     if (bufferIndex >= BUFFER_SIZE) {
