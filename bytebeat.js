@@ -1,10 +1,9 @@
 import * as std from "std";
 import * as os from "os";
-import { initFastMath, loadFormulaFromFile, createMathFunctions, compileFormula } from "./common.js";
+import { loadFormulaFromFile, createMathFunctions, compileFormula } from "./common.js";
 
 const formulaPath = scriptArgs[1] || scriptArgs[0];
 const sampleRate = parseInt(scriptArgs[2]) || 8000;
-const useFastMath = scriptArgs.includes("--fast");
 
 // Parse undersample factor
 let undersample = 1;
@@ -39,9 +38,6 @@ let genFunc = null;
 let lastError = null;
 let lastMtime = 0;
 
-// Initialize math tables
-const tables = initFastMath(useFastMath);
-
 function loadFormula() {
     try {
         const expr = loadFormulaFromFile(formulaPath);
@@ -67,70 +63,36 @@ if (err === 0) {
 }
 
 // Create math functions
-const mathFuncs = createMathFunctions(useFastMath, tables);
-const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2 } = mathFuncs;
-
-const STAT_CHECK_INTERVAL = 512;
-let statCounter = 0;
-
-let errorMode = false;
+const mathFuncs = createMathFunctions();
+const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round } = mathFuncs;
 
 for (; ;) {
-    if (!errorMode) {
-        let i = 0;
-        
-        try {
-            if (undersample === 1) {
-                // Normal mode: compute every sample
-                for (; i < BUFFER_SIZE - 15; i += 16) {
-                    buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+1] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+2] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+3] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+4] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+5] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+6] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+7] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+8] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+9] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+10] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+11] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+12] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+13] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+14] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    buffer[i+15] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                }
-                for (; i < BUFFER_SIZE; i++) {
-                    buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                }
-            } else {
-                // Undersample mode: compute every Nth sample and duplicate
-                for (; i < BUFFER_SIZE; i += undersample) {
-                    const val = genFunc(t, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                    for (let j = 0; j < undersample && i + j < BUFFER_SIZE; j++) {
-                        buffer[i + j] = val;
-                    }
-                    t += undersample;
-                }
+    // Render buffer
+    try {
+        if (undersample === 1) {
+            // Normal mode: compute every sample
+            for (let i = 0; i < BUFFER_SIZE; i++) {
+                buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
             }
-        } catch (e) {
-            errorMode = true;
-            lastError = e;
-            // Fill remaining with silence
-            for (; i < BUFFER_SIZE; i++) {
-                buffer[i] = 128;
+        } else {
+            // Undersample mode: compute every Nth sample and duplicate
+            for (let i = 0; i < BUFFER_SIZE; i += undersample) {
+                const val = genFunc(t, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
+                for (let j = 0; j < undersample && i + j < BUFFER_SIZE; j++) {
+                    buffer[i + j] = val;
+                }
+                t += undersample;
             }
         }
-    } else {
-        // Error recovery mode: slower but safer
+    } catch (e) {
+        if (lastError !== e.message) {
+            lastError = e.message;
+            std.err.printf("[error] %s\n", e.message);
+        }
+        // Fill with silence on error
         for (let i = 0; i < BUFFER_SIZE; i++) {
-            try {
-                buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-            } catch (e) {
-                buffer[i] = 128;
-            }
+            buffer[i] = 128;
         }
-        errorMode = false;
     }
 
     // Single write call
@@ -141,12 +103,10 @@ for (; ;) {
         lastError = null;
     }
 
-    if (++statCounter >= STAT_CHECK_INTERVAL) {
-        statCounter = 0;
-        const [st, err] = os.stat(formulaPath);
-        if (err === 0 && st.mtime !== lastMtime) {
-            lastMtime = st.mtime;
-            loadFormula();
-        }
+    // Check for formula file changes every buffer
+    const [st, err] = os.stat(formulaPath);
+    if (err === 0 && st.mtime !== lastMtime) {
+        lastMtime = st.mtime;
+        loadFormula();
     }
 }

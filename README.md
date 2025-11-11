@@ -65,14 +65,6 @@ The `examples` directory contains some sample bytebeat formulas.
 ./run.sh examples/steady-on-tim.js 44000
 ```
 
-## Fast Math
-
-Enable fast math with the `--fast` flag to use pre-computed lookup tables for math functions (sin, cos, tan) and a xorshift32 PRNG. This should yield a performance boost, but the results may be slightly different.
-
-```bash
-./run.sh examples/steady-on-tim.js 44000 --fast
-```
-
 ## Undersampling
 
 Reduce CPU load by computing every Nth sample and duplicating it. Useful for complex formulas that can't keep up in real-time.
@@ -89,7 +81,10 @@ Example:
 
 ```bash
 # Compute every 4th sample, reducing load by 75%
-./run.sh examples/steady-on-tim.js 44000 --fast --undersample=4
+./run.sh examples/steady-on-tim.js 44000 --undersample=4
+
+# Less aggressive 2x undersampling
+./run.sh examples/42-melody.js 8000 --undersample=2
 ```
 
 **Note:** Undersampling reduces audio quality (introduces aliasing) but allows complex formulas to run in real-time on slower hardware.
@@ -99,14 +94,14 @@ Example:
 Pre-render a fixed duration and play it back. Useful for complex formulas that cause underruns in realtime mode.
 
 ```bash
-./play.sh <formula.js> [rate] [duration] [--fast]
+./play.sh <formula.js> [rate] [duration]
 ```
 
 Example:
 
 ```bash
-# Render and play 30 seconds at 44kHz with fast math
-./play.sh examples/steady-on-tim.js 44000 30 --fast
+# Render and play 30 seconds at 44kHz
+./play.sh examples/steady-on-tim.js 44000 30
 
 # Render and play 60 seconds at 8kHz
 ./play.sh examples/42-melody.js 8000 60
@@ -117,7 +112,7 @@ Example:
 Render bytebeat to a WAV file for easy sharing and playback.
 
 ```bash
-./render.sh <formula.js> [output.wav] [rate] [duration] [--fast]
+./render.sh <formula.js> [output.wav] [rate] [duration]
 ```
 
 Example:
@@ -127,7 +122,7 @@ Example:
 ./render.sh examples/42-melody.js
 
 # Render to custom file with specific parameters
-./render.sh examples/steady-on-tim.js music.wav 44000 60 --fast
+./render.sh examples/steady-on-tim.js music.wav 44000 60
 
 # High quality rendering
 ./render.sh examples/42-melody.js melody.wav 44000 120

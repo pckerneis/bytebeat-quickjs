@@ -1,18 +1,14 @@
 import * as std from "std";
-import { initFastMath, loadFormulaFromFile, createMathFunctions, compileFormula } from "./common.js";
+import { loadFormulaFromFile, createMathFunctions, compileFormula } from "./common.js";
 
 const formulaPath = scriptArgs[1] || scriptArgs[0];
 const sampleRate = parseInt(scriptArgs[2]) || 8000;
 const duration = parseFloat(scriptArgs[3]) || 30.0;
-const useFastMath = scriptArgs.includes("--fast");
 
 const totalSamples = Math.floor(sampleRate * duration);
 
 std.err.printf("=== OFFLINE MODE ===\n");
 std.err.printf("Duration: %.1f seconds (%d samples at %d Hz)\n", duration, totalSamples, sampleRate);
-
-// Initialize math tables
-const tables = initFastMath(useFastMath);
 
 // Load and compile formula
 let genFunc = null;
@@ -26,10 +22,10 @@ try {
 }
 
 // Create math functions
-const mathFuncs = createMathFunctions(useFastMath, tables);
-const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2 } = mathFuncs;
+const mathFuncs = createMathFunctions();
+const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round } = mathFuncs;
 
-const args = [0, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2];
+const args = [0, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round];
 
 // Allocate full buffer in memory
 std.err.printf("Allocating %d MB...\n", (totalSamples / 1024 / 1024).toFixed(2));
