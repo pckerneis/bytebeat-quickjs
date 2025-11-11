@@ -111,3 +111,24 @@ Example:
 # Render and play 60 seconds at 8kHz
 ./play.sh examples/42-melody.js 8000 60
 ```
+
+## WAV File Rendering
+
+Render bytebeat to a WAV file for easy sharing and playback.
+
+```bash
+./render.sh <formula.js> [output.wav] [rate] [duration] [--fast]
+```
+
+Example:
+
+```bash
+# Render to output.wav (30 seconds at 8kHz)
+./render.sh examples/42-melody.js
+
+# Render to custom file with specific parameters
+./render.sh examples/steady-on-tim.js music.wav 44000 60 --fast
+
+# High quality rendering
+./render.sh examples/42-melody.js melody.wav 44000 120
+```
