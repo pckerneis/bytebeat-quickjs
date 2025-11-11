@@ -20,6 +20,20 @@ function loadFormula() {
 
 loadFormula();
 
+// Expose Math functions short names
+globalThis.sin      = Math.sin;
+globalThis.cos      = Math.cos;
+globalThis.tan      = Math.tan;
+globalThis.log      = Math.log;
+globalThis.exp      = Math.exp;
+globalThis.pow      = Math.pow;
+globalThis.sqrt     = Math.sqrt;
+globalThis.abs      = Math.abs;
+globalThis.floor    = Math.floor;
+globalThis.ceil     = Math.ceil;
+globalThis.round    = Math.round;
+globalThis.random   = Math.random;
+
 // Precreate control file so watcher can signal
 std.open(controlPath, "w").close();
 
