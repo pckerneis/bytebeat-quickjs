@@ -1,8 +1,6 @@
 import * as std from "std";
 import * as os from "os";
 
-// Debug: print all scriptArgs
-std.err.printf("scriptArgs: %s\n", JSON.stringify(scriptArgs));
 
 const formulaPath = scriptArgs[1] || scriptArgs[0];
 const controlPath = "/tmp/bytebeat.reload";
@@ -57,7 +55,7 @@ globalThis.round    = Math.round;
 globalThis.random   = Math.random;
 
 // Audio loop with buffering
-const BUFFER_SIZE = 256;
+const BUFFER_SIZE = 4096;
 const buffer = new Uint8Array(BUFFER_SIZE);
 let bufferIndex = 0;
 let lastError = null;
@@ -65,7 +63,6 @@ let lastError = null;
 function flushBuffer() {
   if (bufferIndex > 0) {
     std.out.write(buffer.buffer, 0, bufferIndex);
-    std.out.flush();
     bufferIndex = 0;
   }
 }
@@ -88,14 +85,14 @@ for (;;) {
   }
   t++;
   
-  // Log errors periodically (every 8000 samples = 1 second at 8kHz)
-  if (lastError && t % 8000 === 0) {
-    std.err.printf("[error] %s | expr='%s'\n", lastError.message || lastError, expr);
+  // Log errors periodically (every 44000 samples = 1 second at 44kHz)
+  if (lastError && t % 44000 === 0) {
+    std.err.printf("[error] %s\n", lastError.message || lastError);
     lastError = null;
   }
 
-  // non-blocking reload signal check
-  if (t % 1024 === 0) {
+  // non-blocking reload signal check (every 4096 samples)
+  if (t % 4096 === 0) {
     const [stat_result, stat_err] = os.stat(controlPath);
     if (stat_err === 0) {
       os.remove(controlPath);
