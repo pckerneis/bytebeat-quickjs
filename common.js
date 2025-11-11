@@ -1,7 +1,5 @@
-// Shared utilities for bytebeat scripts
 import * as std from "std";
 
-// Load and parse formula from file
 export function loadFormulaFromFile(path) {
     const f = std.open(path, "r");
     let expr = "";
@@ -22,7 +20,6 @@ export function loadFormulaFromFile(path) {
     return expr;
 }
 
-// Create math functions (just use native Math)
 export function createMathFunctions() {
     const { sin, cos, tan, log, exp, sqrt, ceil, round, pow, random } = Math;
     const abs = (x) => x < 0 ? -x : x;
@@ -31,7 +28,6 @@ export function createMathFunctions() {
     return { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round };
 }
 
-// Compile formula into function
 export function compileFormula(expr) {
     const genFunc = new Function(
         't', 'sin', 'cos', 'tan', 'random', 'sqrt', 'abs', 'floor', 'log', 'exp', 'pow', 'ceil', 'round',

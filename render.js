@@ -23,13 +23,11 @@ try {
     std.exit(1);
 }
 
-// Create math functions
 const mathFuncs = createMathFunctions();
 const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round } = mathFuncs;
 
 const args = [0, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round];
 
-// Allocate audio buffer
 std.err.printf("Allocating %.2f MB...\n", (totalSamples / 1024 / 1024));
 const audioData = new Uint8Array(totalSamples);
 
@@ -38,7 +36,6 @@ const startTime = Date.now();
 
 std.err.printf("Rendering...\n");
 
-// Render audio
 while (t < totalSamples) {
     args[0] = t;
     try {
@@ -48,7 +45,6 @@ while (t < totalSamples) {
     }
     t++;
     
-    // Progress
     if (t % (sampleRate * 5) === 0) {
         const progress = (t / totalSamples * 100).toFixed(1);
         std.err.printf("[%s%%] %d/%d samples\n", progress, t, totalSamples);
@@ -59,7 +55,6 @@ const elapsed = (Date.now() - startTime) / 1000;
 const ratio = duration / elapsed;
 std.err.printf("Rendered %.1fs in %.2fs (%.2fx realtime)\n", duration, elapsed, ratio);
 
-// Write WAV file
 std.err.printf("Writing WAV file...\n");
 
 const dataSize = totalSamples;
@@ -67,7 +62,6 @@ const fileSize = 44 + dataSize;
 
 const f = std.open(outputPath, "wb");
 
-// Helper to write little-endian integers
 function writeU32(val) {
     f.putByte(val & 0xFF);
     f.putByte((val >> 8) & 0xFF);
@@ -86,12 +80,9 @@ function writeString(str) {
     }
 }
 
-// RIFF header
 writeString("RIFF");
 writeU32(fileSize - 8);
 writeString("WAVE");
-
-// fmt chunk
 writeString("fmt ");
 writeU32(16); // Chunk size
 writeU16(1);  // Audio format (1 = PCM)
@@ -101,11 +92,9 @@ writeU32(sampleRate); // Byte rate (sample rate * channels * bytes per sample)
 writeU16(1);  // Block align (channels * bytes per sample)
 writeU16(8);  // Bits per sample
 
-// data chunk
 writeString("data");
 writeU32(dataSize);
 
-// Write audio data
 const WRITE_CHUNK = 65536;
 for (let i = 0; i < totalSamples; i += WRITE_CHUNK) {
     const writeSize = Math.min(WRITE_CHUNK, totalSamples - i);

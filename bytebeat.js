@@ -5,7 +5,6 @@ import { loadFormulaFromFile, createMathFunctions, compileFormula } from "./comm
 const formulaPath = scriptArgs[1] || scriptArgs[0];
 const sampleRate = parseInt(scriptArgs[2]) || 8000;
 
-// Parse undersample factor
 let undersample = 1;
 for (const arg of scriptArgs) {
     const match = arg.match(/^--undersample=(\d+)$/);
@@ -15,7 +14,6 @@ for (const arg of scriptArgs) {
     }
 }
 
-// Validate undersample
 if (![1, 2, 4, 8].includes(undersample)) {
     std.err.printf("[error] undersample must be 1, 2, 4, or 8 (got %d)\n", undersample);
     std.exit(1);
@@ -62,20 +60,16 @@ if (err === 0) {
     loadFormula();
 }
 
-// Create math functions
 const mathFuncs = createMathFunctions();
 const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round } = mathFuncs;
 
 for (; ;) {
-    // Render buffer
     try {
         if (undersample === 1) {
-            // Normal mode: compute every sample
             for (let i = 0; i < BUFFER_SIZE; i++) {
                 buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
             }
         } else {
-            // Undersample mode: compute every Nth sample and duplicate
             for (let i = 0; i < BUFFER_SIZE; i += undersample) {
                 const val = genFunc(t, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
                 for (let j = 0; j < undersample && i + j < BUFFER_SIZE; j++) {
@@ -89,13 +83,12 @@ for (; ;) {
             lastError = e.message;
             std.err.printf("[error] %s\n", e.message);
         }
-        // Fill with silence on error
+        
         for (let i = 0; i < BUFFER_SIZE; i++) {
             buffer[i] = 128;
         }
     }
 
-    // Single write call
     std.out.write(buffer.buffer, 0, BUFFER_SIZE);
 
     if (lastError) {
@@ -103,7 +96,6 @@ for (; ;) {
         lastError = null;
     }
 
-    // Check for formula file changes every buffer
     const [st, err] = os.stat(formulaPath);
     if (err === 0 && st.mtime !== lastMtime) {
         lastMtime = st.mtime;

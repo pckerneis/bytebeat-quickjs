@@ -7,6 +7,8 @@ Features:
 - ALSA audio output
 - Simple command line interface
 - Lightweight
+- Undersampling mode (reduce CPU load by computing every Nth sample)
+- WAV file rendering
 
 ## Dependencies
 
@@ -89,27 +91,9 @@ Example:
 
 **Note:** Undersampling reduces audio quality (introduces aliasing) but allows complex formulas to run in real-time on slower hardware.
 
-## Offline Mode
-
-Pre-render a fixed duration and play it back. Useful for complex formulas that cause underruns in realtime mode.
-
-```bash
-./play.sh <formula.js> [rate] [duration]
-```
-
-Example:
-
-```bash
-# Render and play 30 seconds at 44kHz
-./play.sh examples/steady-on-tim.js 44000 30
-
-# Render and play 60 seconds at 8kHz
-./play.sh examples/42-melody.js 8000 60
-```
-
 ## WAV File Rendering
 
-Render bytebeat to a WAV file for easy sharing and playback.
+Render bytebeat to a WAV file for easy sharing and playback. Also useful for complex formulas that cause underruns in real-time mode.
 
 ```bash
 ./render.sh <formula.js> [output.wav] [rate] [duration]
@@ -126,4 +110,7 @@ Example:
 
 # High quality rendering
 ./render.sh examples/42-melody.js melody.wav 44000 120
+
+# Play the rendered file
+aplay melody.wav
 ```
