@@ -54,22 +54,35 @@ globalThis.ceil     = Math.ceil;
 globalThis.round    = Math.round;
 globalThis.random   = Math.random;
 
-function putchar(byte) {
-    const buf = new Uint8Array(1);
-    buf[0] = byte & 0xFF;
-    std.out.write(buf.buffer);
+// Audio loop with buffering
+const BUFFER_SIZE = 256;
+const buffer = new Uint8Array(BUFFER_SIZE);
+let bufferIndex = 0;
+let lastError = null;
+
+function flushBuffer() {
+  if (bufferIndex > 0) {
+    std.out.write(buffer.buffer, 0, bufferIndex);
     std.out.flush();
+    bufferIndex = 0;
+  }
 }
 
-// Audio loop
-let lastError = null;
 for (;;) {
   try {
     const val = eval(expr) & 255;
-    putchar(val);
+    buffer[bufferIndex++] = val;
+    
+    if (bufferIndex >= BUFFER_SIZE) {
+      flushBuffer();
+    }
   } catch (e) {
-    putchar(128);
+    buffer[bufferIndex++] = 128;
     lastError = e;
+    
+    if (bufferIndex >= BUFFER_SIZE) {
+      flushBuffer();
+    }
   }
   t++;
   
