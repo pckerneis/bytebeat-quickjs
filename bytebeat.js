@@ -52,14 +52,8 @@ for (;;) {
 
   // non-blocking reload signal check
   if (t % 1024 === 0) {
-    let fileExists = false;
-    try {
-      os.stat(controlPath);
-      fileExists = true;
-    } catch (e) {
-      // File doesn't exist
-    }
-    if (fileExists) {
+    const [stat_result, stat_err] = os.stat(controlPath);
+    if (stat_err === 0) {
       os.remove(controlPath);
       loadFormula();
     }
