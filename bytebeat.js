@@ -55,48 +55,35 @@ globalThis.round    = Math.round;
 globalThis.random   = Math.random;
 
 // Audio loop with buffering
-const BUFFER_SIZE = 4096;
+const BUFFER_SIZE = 16384;
 const buffer = new Uint8Array(BUFFER_SIZE);
-let bufferIndex = 0;
 let lastError = null;
 
-function flushBuffer() {
-  if (bufferIndex > 0) {
-    std.out.write(buffer.buffer, 0, bufferIndex);
-    bufferIndex = 0;
-  }
-}
-
 for (;;) {
-  try {
-    const val = genFunc(t) & 255;
-    buffer[bufferIndex++] = val;
-    
-    if (bufferIndex >= BUFFER_SIZE) {
-      flushBuffer();
+  // Fill entire buffer at once for better performance
+  for (let i = 0; i < BUFFER_SIZE; i++) {
+    try {
+      buffer[i] = genFunc(t);
+    } catch (e) {
+      buffer[i] = 128;
+      lastError = e;
     }
-  } catch (e) {
-    buffer[bufferIndex++] = 128;
-    lastError = e;
-    
-    if (bufferIndex >= BUFFER_SIZE) {
-      flushBuffer();
-    }
+    t++;
   }
-  t++;
   
-  // Log errors periodically (every 44000 samples = 1 second at 44kHz)
-  if (lastError && t % 44000 === 0) {
+  // Write full buffer
+  std.out.write(buffer.buffer);
+  
+  // Log errors periodically (once per buffer)
+  if (lastError) {
     std.err.printf("[error] %s\n", lastError.message || lastError);
     lastError = null;
   }
 
-  // non-blocking reload signal check (every 4096 samples)
-  if (t % 4096 === 0) {
-    const [stat_result, stat_err] = os.stat(controlPath);
-    if (stat_err === 0) {
-      os.remove(controlPath);
-      loadFormula();
-    }
+  // non-blocking reload signal check (once per buffer)
+  const [stat_result, stat_err] = os.stat(controlPath);
+  if (stat_err === 0) {
+    os.remove(controlPath);
+    loadFormula();
   }
 }
