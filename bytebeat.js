@@ -37,13 +37,19 @@ globalThis.random   = Math.random;
 // Precreate control file so watcher can signal
 std.open(controlPath, "w").close();
 
+function putchar(byte) {
+    // write a single byte to stdout
+    const buf = new Uint8Array([byte & 0xFF]);
+    std.out.write(buf);
+}
+
 // Audio loop
 for (;;) {
   try {
     const val = eval(expr) & 255;
-    std.out.putchar(val);
+    putchar(val);
   } catch (e) {
-    std.out.putchar(128); // silence on error
+    putchar(128);
   }
   t++;
 
