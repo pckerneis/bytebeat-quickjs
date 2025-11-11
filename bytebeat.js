@@ -10,8 +10,18 @@ let expr = "(t*(t>>5|t>>8))&255";
 function loadFormula() {
   try {
     const f = std.open(formulaPath, "r");
-    expr = f.readAsString().trim();
+    const content = f.readAsString().trim();
     f.close();
+    
+    // Filter out comment-only lines but keep all code (including inline comments)
+    const lines = content.split('\n');
+    const codeLines = lines.filter(line => {
+      const trimmed = line.trim();
+      return trimmed && !trimmed.startsWith('//');
+    });
+    
+    expr = codeLines.join('\n');
+    
     std.err.printf("[reloaded %s]\n", new Date().toLocaleTimeString());
   } catch (e) {
     std.err.printf("[error loading formula] %s\n", e.message);
