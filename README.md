@@ -73,6 +73,27 @@ Enable fast math with the `--fast` flag to use pre-computed lookup tables for ma
 ./run.sh examples/steady-on-tim.js 44000 --fast
 ```
 
+## Undersampling
+
+Reduce CPU load by computing every Nth sample and duplicating it. Useful for complex formulas that can't keep up in real-time.
+
+```bash
+./run.sh <formula.js> <rate> --undersample=N
+```
+
+Valid values: `1` (default), `2`, `4`, `8`
+
+The sample rate must be divisible by the undersample factor.
+
+Example:
+
+```bash
+# Compute every 4th sample, reducing load by 75%
+./run.sh examples/steady-on-tim.js 44000 --fast --undersample=4
+```
+
+**Note:** Undersampling reduces audio quality (introduces aliasing) but allows complex formulas to run in real-time on slower hardware.
+
 ## Offline Mode
 
 Pre-render a fixed duration and play it back. Useful for complex formulas that cause underruns in realtime mode.

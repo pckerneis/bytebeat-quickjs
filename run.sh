@@ -3,19 +3,26 @@ FILE=$1
 RATE=${2:-8000}
 
 if [ -z "$FILE" ]; then
-  echo "Usage: $0 <formula.js> [rate] [--fast]"
+  echo "Usage: $0 <formula.js> [rate] [--fast] [--undersample=N]"
   echo "  --fast: Use pre-computed lookup tables for math functions"
+  echo "  --undersample=N: Compute every Nth sample (1,2,4,8) to reduce CPU load"
   exit 1
 fi
 
-# Extract --fast flag if present
+# Extract flags
 FAST_FLAG=""
-if [ "$3" = "--fast" ]; then
-  FAST_FLAG="--fast"
-fi
+UNDERSAMPLE=""
+
+for arg in "$@"; do
+  if [ "$arg" = "--fast" ]; then
+    FAST_FLAG="--fast"
+  elif [[ "$arg" =~ ^--undersample=([0-9]+)$ ]]; then
+    UNDERSAMPLE="--undersample=${BASH_REMATCH[1]}"
+  fi
+done
 
 # Start QuickJS + aplay pipeline
-qjs bytebeat.js "$FILE" "$RATE" $FAST_FLAG | aplay -f U8 -r "$RATE" &
+qjs bytebeat.js "$FILE" "$RATE" $FAST_FLAG $UNDERSAMPLE | aplay -f U8 -r "$RATE" &
 
 PID=$!
 

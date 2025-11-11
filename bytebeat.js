@@ -3,7 +3,34 @@ import * as os from "os";
 import { initFastMath, loadFormulaFromFile, createMathFunctions, compileFormula } from "./common.js";
 
 const formulaPath = scriptArgs[1] || scriptArgs[0];
+const sampleRate = parseInt(scriptArgs[2]) || 8000;
 const useFastMath = scriptArgs.includes("--fast");
+
+// Parse undersample factor
+let undersample = 1;
+for (const arg of scriptArgs) {
+    const match = arg.match(/^--undersample=(\d+)$/);
+    if (match) {
+        undersample = parseInt(match[1]);
+        break;
+    }
+}
+
+// Validate undersample
+if (![1, 2, 4, 8].includes(undersample)) {
+    std.err.printf("[error] undersample must be 1, 2, 4, or 8 (got %d)\n", undersample);
+    std.exit(1);
+}
+
+if (sampleRate % undersample !== 0) {
+    std.err.printf("[error] sample rate %d not divisible by undersample %d\n", sampleRate, undersample);
+    std.exit(1);
+}
+
+if (undersample > 1) {
+    std.err.printf("[undersample] factor=%d (compute every %d samples)\n", undersample, undersample);
+}
+
 const BUFFER_SIZE = 4096;
 const buffer = new Uint8Array(BUFFER_SIZE);
 
@@ -52,29 +79,39 @@ for (; ;) {
     if (!errorMode) {
         let i = 0;
         
-        // Massive unroll: 16 samples at once
         try {
-            for (; i < BUFFER_SIZE - 15; i += 16) {
-                buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+1] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+2] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+3] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+4] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+5] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+6] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+7] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+8] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+9] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+10] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+11] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+12] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+13] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+14] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-                buffer[i+15] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
-            }
-            // Remaining samples
-            for (; i < BUFFER_SIZE; i++) {
-                buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+            if (undersample === 1) {
+                // Normal mode: compute every sample
+                for (; i < BUFFER_SIZE - 15; i += 16) {
+                    buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+1] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+2] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+3] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+4] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+5] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+6] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+7] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+8] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+9] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+10] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+11] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+12] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+13] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+14] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    buffer[i+15] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                }
+                for (; i < BUFFER_SIZE; i++) {
+                    buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                }
+            } else {
+                // Undersample mode: compute every Nth sample and duplicate
+                for (; i < BUFFER_SIZE; i += undersample) {
+                    const val = genFunc(t, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2) & 255;
+                    for (let j = 0; j < undersample && i + j < BUFFER_SIZE; j++) {
+                        buffer[i + j] = val;
+                    }
+                    t += undersample;
+                }
             }
         } catch (e) {
             errorMode = true;
