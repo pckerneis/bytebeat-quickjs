@@ -33,8 +33,8 @@ const buffer = new Uint8Array(BUFFER_SIZE);
 
 let t = 0;
 let genFunc = null;
-let lastError = null;
 let lastMtime = 0;
+let lastErrorMsg = "";
 
 function loadFormula() {
     try {
@@ -79,22 +79,16 @@ for (; ;) {
             }
         }
     } catch (e) {
-        if (lastError !== e.message) {
-            lastError = e.message;
+        if (lastErrorMsg !== e.message) {
+            lastErrorMsg = e.message;
             std.err.printf("[error] %s\n", e.message);
         }
-        
         for (let i = 0; i < BUFFER_SIZE; i++) {
             buffer[i] = 128;
         }
     }
 
     std.out.write(buffer.buffer, 0, BUFFER_SIZE);
-
-    if (lastError) {
-        std.err.printf("[error] %s\n", lastError.message || lastError);
-        lastError = null;
-    }
 
     const [st, err] = os.stat(formulaPath);
     if (err === 0 && st.mtime !== lastMtime) {

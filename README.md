@@ -3,6 +3,7 @@
 A bytebeat player using QuickJS designed to run on constrained Linux systems.
 
 Features:
+
 - Realtime reloading of the formula file
 - ALSA audio output
 - Simple command line interface
@@ -10,7 +11,7 @@ Features:
 - Undersampling mode (reduce CPU load by computing every Nth sample)
 - WAV file rendering
 
-## Dependencies
+Dependencies:
 
 - QuickJS
 - ALSA
