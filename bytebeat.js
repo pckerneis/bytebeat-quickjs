@@ -67,7 +67,7 @@ function loadFormula() {
 
         genFunc = new Function(
             't, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, pow2',
-            `"use strict"; return (${expr})`);
+            `return (${expr})`);
 
         std.err.printf("[reloaded %s] expr='%s' (length=%d)\n",
             new Date().toLocaleTimeString(), expr, expr.length);
