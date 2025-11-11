@@ -42,7 +42,11 @@ function loadFormula() {
     }
 }
 
-loadFormula();
+const [st, err] = os.stat(formulaPath);
+if (err === 0) {
+    lastMtime = st.mtime;
+    loadFormula();
+}
 
 const { sin, cos, tan, log, exp, pow, sqrt, abs, floor, ceil, round, random } = Math;
 
