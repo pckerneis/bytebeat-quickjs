@@ -41,14 +41,22 @@ function putchar(byte) {
 }
 
 // Audio loop
+let lastError = null;
 for (;;) {
   try {
     const val = eval(expr) & 255;
     putchar(val);
   } catch (e) {
     putchar(128);
+    lastError = e;
   }
   t++;
+  
+  // Log errors periodically (every 8000 samples = 1 second at 8kHz)
+  if (lastError && t % 8000 === 0) {
+    std.err.printf("[error] %s\n", lastError.message || lastError);
+    lastError = null;
+  }
 
   // non-blocking reload signal check
   if (t % 1024 === 0) {
