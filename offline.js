@@ -101,29 +101,24 @@ const pow = (base, exp) => base === 2 ? pow2(exp) : Math.pow(base, exp);
 
 const args = [0, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, pow2];
 
-// Render and output
-const chunk = new Uint8Array(CHUNK_SIZE);
+// Allocate full buffer in memory
+std.err.printf("Allocating %d MB...\n", (totalSamples / 1024 / 1024).toFixed(2));
+const fullBuffer = new Uint8Array(totalSamples);
+
 let t = 0;
 const startTime = Date.now();
 
 std.err.printf("Rendering...\n");
 
+// Render everything to memory first
 while (t < totalSamples) {
-    const remaining = totalSamples - t;
-    const currentChunk = Math.min(CHUNK_SIZE, remaining);
-    
-    // Fill chunk
-    for (let i = 0; i < currentChunk; i++) {
-        args[0] = t++;
-        try {
-            chunk[i] = genFunc(...args) & 255;
-        } catch (e) {
-            chunk[i] = 128;
-        }
+    args[0] = t;
+    try {
+        fullBuffer[t] = genFunc(...args) & 255;
+    } catch (e) {
+        fullBuffer[t] = 128;
     }
-    
-    // Write to stdout
-    std.out.write(chunk.buffer, 0, currentChunk);
+    t++;
     
     // Progress
     if (t % (sampleRate * 5) === 0) {
@@ -135,3 +130,12 @@ while (t < totalSamples) {
 const elapsed = (Date.now() - startTime) / 1000;
 const ratio = duration / elapsed;
 std.err.printf("Done! Rendered %.1fs in %.2fs (%.2fx realtime)\n", duration, elapsed, ratio);
+
+// Now write everything at once
+std.err.printf("Writing to output...\n");
+const WRITE_CHUNK = 65536;
+for (let i = 0; i < totalSamples; i += WRITE_CHUNK) {
+    const writeSize = Math.min(WRITE_CHUNK, totalSamples - i);
+    std.out.write(fullBuffer.buffer, i, writeSize);
+}
+std.err.printf("Playback started.\n");
