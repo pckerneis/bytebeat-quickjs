@@ -30,7 +30,7 @@ export function createMathFunctions() {
 
 export function compileFormula(expr) {
     const genFunc = new Function(
-        't', 'sin', 'cos', 'tan', 'random', 'sqrt', 'abs', 'floor', 'log', 'exp', 'pow', 'ceil', 'round', 'min', 'max', 'tanh',
+        't', 'sin', 'cos', 'tan', 'random', 'sqrt', 'abs', 'floor', 'log', 'exp', 'pow', 'ceil', 'round', 'min', 'max', 'tanh', 'PI', 'TAU',
         `return (${expr})`
     );
     

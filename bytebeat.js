@@ -79,7 +79,7 @@ for (; ;) {
                     pos = pos / sampleRate;
                 }
 
-                buffer[i] = genFunc(pos, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh);
+                buffer[i] = genFunc(pos, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh, Math.PI, Math.TAU);
 
                 if (!floatOutput) {
                     buffer[i] = buffer[i] & 255;
@@ -93,7 +93,7 @@ for (; ;) {
                     pos = pos / sampleRate;
                 }
 
-                const val = genFunc(pos, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh);
+                const val = genFunc(pos, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh, Math.PI, Math.TAU);
 
                 for (let j = 0; j < undersample && i + j < BUFFER_SIZE; j++) {
                     buffer[i + j] = val;
