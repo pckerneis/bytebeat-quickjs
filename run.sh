@@ -9,24 +9,16 @@ if [ -z "$FILE" ]; then
   exit 1
 fi
 
-# Extract undersample flag
-UNDERSAMPLE=""
-for arg in "$@"; do
-  if [[ "$arg" =~ ^--undersample=([0-9]+)$ ]]; then
-    UNDERSAMPLE="--undersample=${BASH_REMATCH[1]}"
-  fi
-done
-
 FORMAT="U8"
 for arg in "$@"; do
   if [[ "$arg" == "--float" ]]; then
-    FORMAT="F32"
+    FORMAT="FLOAT_LE"
     break
   fi
 done
 
 # Start QuickJS + aplay pipeline
-qjs bytebeat.js "$FILE" "$RATE" $UNDERSAMPLE $FLOAT | aplay -f $FORMAT -r "$RATE" &
+qjs bytebeat.js "$FILE" "$RATE" "$@" | aplay -f $FORMAT -r "$RATE" &
 
 PID=$!
 
