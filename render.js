@@ -24,9 +24,9 @@ try {
 }
 
 const mathFuncs = createMathFunctions();
-const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round } = mathFuncs;
+const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh } = mathFuncs;
 
-const args = [0, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round];
+const args = [0, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh];
 
 std.err.printf("Allocating %.2f MB...\n", (totalSamples / 1024 / 1024));
 const audioData = new Uint8Array(totalSamples);

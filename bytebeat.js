@@ -6,10 +6,16 @@ const formulaPath = scriptArgs[1] || scriptArgs[0];
 const sampleRate = parseInt(scriptArgs[2]) || 8000;
 
 let undersample = 1;
+let floatOutput = false;
 for (const arg of scriptArgs) {
     const match = arg.match(/^--undersample=(\d+)$/);
     if (match) {
         undersample = parseInt(match[1]);
+        break;
+    }
+
+    if (arg === "--float") {
+        floatOutput = true;
         break;
     }
 }
@@ -29,7 +35,7 @@ if (undersample > 1) {
 }
 
 const BUFFER_SIZE = 4096;
-const buffer = new Uint8Array(BUFFER_SIZE);
+const buffer = floatOutput ? new Float32Array(BUFFER_SIZE) : new Uint8Array(BUFFER_SIZE);
 
 let t = 0;
 let genFunc = null;
@@ -61,20 +67,42 @@ if (err === 0) {
 }
 
 const mathFuncs = createMathFunctions();
-const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round } = mathFuncs;
+const { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh } = mathFuncs;
 
 for (; ;) {
     try {
         if (undersample === 1) {
             for (let i = 0; i < BUFFER_SIZE; i++) {
-                buffer[i] = genFunc(t++, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
+                let pos = t++;
+
+                if (floatOutput) {
+                    pos = pos / sampleRate;
+                }
+
+                buffer[i] = genFunc(pos, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh);
+
+                if (!floatOutput) {
+                    buffer[i] = buffer[i] & 255;
+                }
             }
         } else {
             for (let i = 0; i < BUFFER_SIZE; i += undersample) {
-                const val = genFunc(t, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round) & 255;
+                let pos = t;
+
+                if (floatOutput) {
+                    pos = pos / sampleRate;
+                }
+
+                const val = genFunc(pos, sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh);
+
                 for (let j = 0; j < undersample && i + j < BUFFER_SIZE; j++) {
                     buffer[i + j] = val;
+
+                    if (!floatOutput) {
+                        buffer[i + j] = buffer[i + j] & 255;
+                    }
                 }
+
                 t += undersample;
             }
         }
@@ -84,7 +112,11 @@ for (; ;) {
             std.err.printf("[error] %s\n", e.message);
         }
         for (let i = 0; i < BUFFER_SIZE; i++) {
-            buffer[i] = 128;
+            if (!floatOutput) {
+                buffer[i] = 128;
+            } else {
+                buffer[i] = 0;
+            }
         }
     }
 

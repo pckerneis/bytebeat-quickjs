@@ -21,16 +21,16 @@ export function loadFormulaFromFile(path) {
 }
 
 export function createMathFunctions() {
-    const { sin, cos, tan, log, exp, sqrt, ceil, round, pow, random } = Math;
+    const { sin, cos, tan, log, exp, sqrt, ceil, round, pow, random, min, max, tanh } = Math;
     const abs = (x) => x < 0 ? -x : x;
     const floor = (x) => x | 0;
     
-    return { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round };
+    return { sin, cos, tan, random, sqrt, abs, floor, log, exp, pow, ceil, round, min, max, tanh };
 }
 
 export function compileFormula(expr) {
     const genFunc = new Function(
-        't', 'sin', 'cos', 'tan', 'random', 'sqrt', 'abs', 'floor', 'log', 'exp', 'pow', 'ceil', 'round',
+        't', 'sin', 'cos', 'tan', 'random', 'sqrt', 'abs', 'floor', 'log', 'exp', 'pow', 'ceil', 'round', 'min', 'max', 'tanh',
         `return (${expr})`
     );
     

@@ -3,8 +3,9 @@ FILE=$1
 RATE=${2:-8000}
 
 if [ -z "$FILE" ]; then
-  echo "Usage: $0 <formula.js> [rate] [--undersample=N]"
+  echo "Usage: $0 <formula.js> [rate] [--undersample=N] [--float]"
   echo "  --undersample=N: Compute every Nth sample (1,2,4,8) to reduce CPU load"
+  echo "  --float: Use float output instead of uint8"
   exit 1
 fi
 
@@ -16,8 +17,16 @@ for arg in "$@"; do
   fi
 done
 
+FORMAT="U8"
+for arg in "$@"; do
+  if [[ "$arg" == "--float" ]]; then
+    FORMAT="F32"
+    break
+  fi
+done
+
 # Start QuickJS + aplay pipeline
-qjs bytebeat.js "$FILE" "$RATE" $UNDERSAMPLE | aplay -f U8 -r "$RATE" &
+qjs bytebeat.js "$FILE" "$RATE" $UNDERSAMPLE $FLOAT | aplay -f $FORMAT -r "$RATE" &
 
 PID=$!
 
